@@ -1,0 +1,16 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+
+# Docker / LocalStack data
+**/localstack-data/
+**/docker-compose.override.yml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -1,0 +1,50 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "${LOCALSTACK_PORT:-4566}:4566"
+      - "${LOCALSTACK_EXTRA_PORTS:-4510-4559}:4510-4559"
+    env_file:
+      - ./ops-panel-back/.env
+    environment:
+      SERVICES: ${SERVICES:-logs,rds,sqs}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      EDGE_PORT: ${EDGE_PORT:-4566}
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:-}
+      PERSISTENCE: "1"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./ops-panel-back/deployment/localstack-data:/var/lib/localstack"
+      - "./ops-panel-back/deployment/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
+
+  backend:
+    build:
+      context: ./ops-panel-back
+      dockerfile: deployment/Dockerfile.dev
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    env_file:
+      - ./ops-panel-back/.env
+    environment:
+      PORT: ${PORT:-3000}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ENDPOINT: ${AWS_ENDPOINT:-http://localstack:4566}
+    volumes:
+      - ./ops-panel-back:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - localstack
+
+  frontend:
+    build:
+      context: ./ops-panel-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    volumes:
+      - ./ops-panel-ui:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - backend
